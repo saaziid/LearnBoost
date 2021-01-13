@@ -19,6 +19,8 @@
 
 	if($type=='faculty')
 		redirect_to('homepage.php');
+
+
 ?>
 
 <?php include('../partials/s_nav.php'); ?>
