@@ -1,5 +1,3 @@
-# LearnBoost
-Our goal is to create a platform for teachers and students.
 <?php session_start(); ?>
 <?php include('../db/connect.php'); ?>
 <?php include('../partials/s_header.php'); ?>
@@ -18,87 +16,129 @@ Our goal is to create a platform for teachers and students.
 	$name=$student['name'];
 	$type=$student['type'];
 	$email=$student['email'];
-
-	if($type=='student')
-		redirect_to('homepage.php');
 ?>
 
 <?php include('../partials/s_nav.php'); ?>
 
-<?php if(!isset($_GET['id'])){ ?>
+<?php if(isset($_GET['class_id'])){ ?>
+<?php
+	$classId=(int)(mysqli_real_escape_string($connection, $_GET['class_id']));
+
+	if($type=='student'){
+		$check="SELECT id FROM enrollments WHERE userId='{$studentId}' AND classId='{$_GET['class_id']}'";
+		$checkRes=mysqli_query($connection, $check);
+		if(mysqli_num_rows($checkRes)<1)
+			redirect_to('courses.php');
+	}else{
+		$check="SELECT id FROM classes WHERE userId='{$studentId}' AND id='{$_GET['class_id']}'";
+		$checkRes=mysqli_query($connection, $check);
+		if(mysqli_num_rows($checkRes)<1)
+			redirect_to('classes.php');
+	}
+?>
+
 <div class="container">
 	<div class="row">
-		<div class="col-md-7 course-list">
-			<div class="row">
-			<div class="col-md-12 cl-inner">
-				<h2>Your Classes</h2>
-				<hr>
-				<?php
-					$query="SELECT classes.*, tags.tag FROM classes INNER JOIN tags ON classes.tagId=tags.id AND classes.userId='{$studentId}' ORDER BY classes.id DESC";
-					$res=mysqli_query($connection, $query);
-					while($row=mysqli_fetch_array($res)){
-				?>
-				<div class="courses">
-					<a href="classroom.php?class_id=<?php echo $row['id']; ?>"><?php echo $row['title']; ?></a>
-					<span style="float: right">
-						<span class="label label-default"><?php echo $row['tag']; ?></span>
-						<form action="../controllers/classes.php" method="POST" style="display: inline">
-							<input type="hidden" name="classId" value="<?php echo $row['id']; ?>">
-							<input type="hidden" name="facId" value="<?php echo $studentId; ?>">
-							<button class="btn btn-danger btn-xs" type="submit" name="deleteClass" onclick="return confirm('Your all class information will be removed. Are you sure you want to delete?')">Delete</button>
-						</form>
-					</span>
+		<div class="col-md-9" style="padding: 0 10px">
+			<div class="col-md-12 classRoom-components">
+				<div>
+
+				  <!-- Nav tabs -->
+				  <ul class="nav nav-pills nav-justified" role="tablist">
+				    <li role="presentation" class="active" id="homeTl"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a></li>
+				    <li role="presentation" id="materialsTl"><a href="#materials" aria-controls="materials" role="tab" data-toggle="tab">Class Materials</a></li>
+				    <li role="presentation" id="gradesTl"><a href="#grades" aria-controls="grades" role="tab" data-toggle="tab">Grades</a></li>
+				    <?php if($type=='faculty'){ ?>
+				    <li role="presentation" id="structureTl"><a href="#structure" aria-controls="structure" role="tab" data-toggle="tab">Modify Course Structure</a></li>
+				    <?php } ?>
+				  </ul>
+
+				  <!-- Tab panes -->
+				  <div class="tab-content">
+
+				  	<!-- ---------------------------- Home tab area ------------------------ -->
+				    <?php include('partials/homeTab.php'); ?>
+				    
+				    <!-- ---------------------------- Materials tab area ------------------------ -->
+				    <?php include('partials/materialsTab.php'); ?>
+
+
+				    <!-- ---------------------------- Grades tab area ------------------------ -->
+				    <?php include('partials/gradesTab.php'); ?>
+
+
+				    <!-- ----------------------- Modify course tab structure -------------------------- -->
+				    <?php include('partials/modifyCSTab.php'); ?>
+				  </div>
+
 				</div>
-				<br>
-				<?php } ?>
-			</div>
 			</div>
 		</div>
-		<div class="col-md-5 add-course">
-			<div class="row">
-			<div class="col-md-12 ac-inner">
-				<h3>Add Class</h3>
-				<hr>
-				<?php if(isset($_SESSION['courseAddSuccess'])){ ?>
-				<div class="alert alert-success"><?php echo $_SESSION['courseAddSuccess']; ?></div>
+
+
+		<!-- ---------------------------------- Classroom right sidebar --------------------------------- -->
+		<div class="col-md-3" style="padding: 0 10px">
+		<div class="col-md-12 classRightSidebar">
+			<?php
+				$query1="SELECT classes.*, tags.tag FROM classes INNER JOIN tags ON classes.tagId=tags.id AND classes.id='{$_GET['class_id']}'";
+				$res1=mysqli_query($connection, $query1);
+				if(mysqli_num_rows($res1)<1)
+					$type=='student' ? redirect_to('courses.php') : redirect_to('classes.php');
+
+				while($row=mysqli_fetch_array($res1)){
+					if($studentId){
+			?>
+			<h4><?php echo ucwords($row['title']); ?></h4>
+			<hr>
+			<p class="text-center"><span class="label label-default"><?php echo $row['tag']; ?></span></p>
+			<p class="text-center">Name: <span style="color: gray"><?php echo ucwords($row['name']); ?></span></p>
+			<p class="text-center">Faculty: <span style="color: gray"><?php echo ucwords(getUser($row['userId'])['name']); ?></span></p>
+			<p class="text-center">Access Code: <span class="accessCode"><?php echo $row['code']; ?></span></p>
+			<?php }else{ redirect_to('classes.php'); }} ?>
+			<br>
+			<h4>Students</h4>
+			<hr>
+			<div class="student-lists">
+			<?php
+				$query2="SELECT users.* FROM users INNER JOIN enrollments ON enrollments.classId='{$classId}' AND enrollments.userId=users.id";
+				$res2=mysqli_query($connection, $query2);
+				if(mysqli_num_rows($res2)>0){
+					while($row=mysqli_fetch_array($res2)){
+						$profile=getUserProfile($row['id']);
+				?>
+				<p>
+					<?php if(!empty($profile) && $profile['image']!='empty'){ ?>
+						<img src="images/<?php echo $profile['image']; ?>" alt="" width="20px" height="20px">
+					<?php }else{ if($type=='faculty'){ ?>
+						<img src="https://lh3.googleusercontent.com/-ps7fYBDY170/AAAAAAAAAAI/AAAAAAAAAB4/O7ry2Z2mruA/photo.jpg" alt="" width="20px" height="20px">
+					<?php }else{ ?>
+						<img src="https://www.meine-erste-homepage.com/avatars24.png" alt="" width="20px" height="20px">
+					<?php }} ?>
+
+					&nbsp;&nbsp;&nbsp;
+					<a href="userprofile.php?userid=<?php echo $row['id']; ?>&user=<?php echo profileGetParamName($row['name']); ?>"><?php echo ucwords($row['name']); ?></a>
+				</p>
 				<?php
-						unset($_SESSION['courseAddSuccess']);
-					} ?>
-				<form action="../controllers/classes.php" method="POST">
-					<input type="hidden" name="userId" value="<?php echo $studentId; ?>">
-					<input type="text" name="title" class="form-control" placeholder="Course title" required><br>
-					<input type="text" name="name" class="form-control" placeholder="Course name" required><br>
-					<div class="row">
-					<div class="col-md-12">
-						<div class="row">
-						<div class="col-md-6">
-							<select name="tag" class="selectpicker" data-live-search="true" required>
-								<option value="">Course tag</option>
-							  <?php
-									$query="SELECT * FROM tags ORDER BY tag ASC";
-									$res=mysqli_query($connection, $query);
-									while($row=mysqli_fetch_array($res)){
-								?>
-								<option value="<?php echo $row['id']; ?>"><?php echo strtoupper($row['tag']); ?></option>
-								<?php } ?>
-							</select>
-						</div>
-						<div class="col-md-6">
-							<input type="number" name="capacity" class="form-control" placeholder="Student Capacity" required><br>
-						</div>
-						</div>
-					</div>
-					</div>
-					<button type="submit" name="course-add" class="btn btn-default">Add Course</button>
-				</form>
+					}
+				}else{
+					echo "No students";
+				}
+			?>
 			</div>
-			</div>
+		</div>
 		</div>
 	</div>
 </div>
-<?php } ?>
 
-<?php if(isset($_GET['id'])){redirect_to('classes.php');} ?>
+<?php }else{$type=='student' ? redirect_to('courses.php') : redirect_to('classes.php');} ?>
+
+<script>
+	// ---------------------- modify course structure(edit area show) ----------------------------------
+	$('.edit-area-showBtn').click(function(){
+		$('.md-lists p, .edit-area-showBtn').hide();
+		$('.md-lists form').fadeIn(500);
+	});
+</script>
 
 <?php include('../partials/s_footer.php'); ?>
 <?php include('../db/close.php'); ?>
