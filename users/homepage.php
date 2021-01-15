@@ -9,13 +9,14 @@
 
 <!-- ---------------- Get user for specific id ----------------- -->
 <?php
-	$student=getUser($_SESSION['userid']);
+	$student=getUser($_SESSION['userid']); /*!< get the student user id .*/
 
-	$studentId=$student['id'];
-	$username=$student['username'];
-	$name=$student['name'];
-	$type=$student['type'];
-	$email=$student['email'];
+	$studentId=$student['id']; /*!< store the student user id .*/
+	$username=$student['username']; /*!< store the student username.*/
+	$name=$student['name']; /*!< store the student name .*/
+	$type=$student['type']; /*!< store the student type .*/
+	$email=$student['email']; /*!< store the student user email .*/
+
 
 	$profile=[];
 
